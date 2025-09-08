@@ -1,0 +1,144 @@
+Tujuan:
+Bangun aplikasi POS + pencatatan keuangan untuk UMKM (mobile-first, Android/iOS) meniru fungsi utama BukuWarung. Aplikasi harus siap dipakai oleh pedagang kecil untuk mencatat transaksi, mengelola hutang/piutang, stok, menerima pembayaran, dan membuat laporan. Harus ada backend + admin web + mobile app + sinkronisasi offline.
+
+Target pengguna:
+- Pemilik warung/UMKM (tanpa keahlian teknis)
+- Kasir/operator
+- Admin pemilik (multi-cabang)
+
+Platform & tech stack rekomendasi (boleh diubah, jelaskan pilihan):
+- Mobile: React Native (TypeScript)
+- Backend: Node.js + Express (TypeScript) atau NestJS
+- Database: MongoDB (offline-friendly via Realm/WatermelonDB atau local SQLite sync)
+- Auth: JWT + refresh tokens
+- Storage file: AWS S3 atau mock local storage
+- Notifikasi WA: API WhatsApp Business / Twilio (mock jika tidak ada akses)
+- Build: Docker + docker-compose
+- CI: basic GitHub Actions (optional)
+
+Fitur utama (dengan flow & acceptance criteria):
+
+1) Auth & User
+- Register toko & user, roles: owner, cashier, admin.
+- Login via email/phone + OTP optional.
+- Acceptance: user bisa login, token valid, logout menghapus token.
+
+2) Dashboard & Multi-toko
+- Dashboard ringkasan: omzet hari ini, piutang, stok kritis.
+- Pilih cabang / tambah cabang.
+- Acceptance: owner lihat data gabungan & per-cabang.
+
+3) Pencatatan Transaksi (POS)
+- Buat invoice/struk: pilih item, qty, diskon, pajak; simpan sebagai paid/unpaid.
+- Metode bayar: tunai, transfer, e-wallet, QRIS (mock flow).
+- Cetak PDF struk & simpan.
+- Acceptance: transaksi tersimpan, total benar, tercatat di laporan.
+
+4) Manajemen Produk & Stok
+- CRUD produk (nama, SKU, harga beli/jual, satuan, stok).
+- History stok (masuk/keluar, koreksi).
+- Notifikasi stok rendah (threshold per produk).
+- Acceptance: perubahan stok update realtime; notifikasi saat stok < threshold.
+
+5) Pelanggan & Hutang-Piutang
+- CRUD pelanggan; catat piutang per transaksi; tampil aging piutang.
+- Kirim reminder otomatis via WhatsApp (template) berdasarkan tenggat.
+- Acceptance: piutang muncul di daftar, reminder bisa dijadwalkan & dikirim (mock/send log).
+
+6) Laporan & Export
+- Laporan: penjualan harian/mingguan/bulanan, laba-rugi, omzet per produk, arus kas.
+- Export CSV / Excel / PDF (periode custom).
+- Acceptance: generate laporan sesuai filter, file bisa diunduh.
+
+7) Offline-first & Sinkronisasi
+- Aplikasi harus bisa mencatat transaksi offline; saat online sinkron otomatis.
+- Konfik: last-write-wins + per-entity version/timestamp; log konflik untuk review.
+- Acceptance: input offline muncul setelah sync tanpa duplikasi.
+
+8) Integrasi Pembayaran
+- Integrasi QRIS & e-wallet (mock if no merchant).
+- Simpan bukti transaksi (foto/resi).
+- Acceptance: simulate callback pembayaran, status invoice berubah menjadi paid.
+
+9) Keamanan & Config
+- Env vars: SESSION_SECRET / JWT_SECRET, DB_URL, WA_API_KEY, PAYMENT_API_KEY.
+- Role-based access control.
+- Audit log (user actions).
+- Acceptance: sensitive keys via env, endpoints protected.
+
+10) Admin Panel (Web)
+- Manajemen user, toko, laporan global, setting integrasi, view logs.
+- Acceptance: owner/admin bisa retrieve data multi-toko & set threshold.
+
+Data model (entitas utama contoh fields):
+- User: { _id, name, phone, email, role, passwordHash, tokoIds }
+- Toko: { _id, name, address, timezone, currency, config: {stokThreshold} }
+- Produk: { _id, tokoId, name, sku, priceBuy, priceSell, stock, unit }
+- Transaksi: { _id, tokoId, items:[{productId, qty, price, discount}], total, paymentStatus, paymentMethod, customerId, createdAt, offlineId? }
+- Pelanggan: { _id, tokoId, name, phone, alamat, balance }
+- Piutang: { _id, transaksiId, tokoId, customerId, amount, dueDate, paidAmount, status }
+- Log / Audit: { _id, userId, tokoId, action, payload, timestamp }
+
+API endpoints (contoh penting):
+- POST /auth/login -> {token, refreshToken}
+- GET /toko/:id/dashboard
+- POST /transaksi -> body transaksi
+- GET /transaksi?from=&to=&status=
+- POST /produk, PUT /produk/:id, GET /produk
+- POST /pelanggan, GET /pelanggan/:id
+- POST /piutang/:id/reminder -> trigger WA
+- GET /laporan/sales?from=&to=&groupBy=
+(Tambahkan dokumentasi OpenAPI / Swagger)
+
+UI / UX:
+- Mobile-first, sederhana, font readable, bahasa default: Bahasa Indonesia (i18n support).
+- Layar penting: POS (big buttons), Produk list, Pelanggan, Piutang, Laporan, Settings.
+- UX: konfirmasi sebelum hapus, undo untuk koreksi stok, feedback sinkronisasi.
+- Theme: terang, high contrast; ukuran tombol besar untuk transaksi cepat.
+
+Non-functional:
+- Response time backend < 300ms (opsional), support 1000 transaksi/hari per toko.
+- Mode offline: local DB + queue.
+- Backup & export data per toko.
+
+Testing & QA:
+- Unit tests untuk backend (routes, model logic).
+- Integration test: transaksi full flow (create -> pay -> report).
+- E2E test minimal pada critical flows.
+
+Deliverables yang diharapkan dari AI / developer:
+1. Repo full-stack (frontend mobile RN, backend, admin web).
+2. README dengan langkah setup & env vars.
+3. Dockerfile + docker-compose untuk dev.
+4. Database seed (JSON) & Postman collection / OpenAPI spec.
+5. UI mockups (PNG/SVG) untuk layar utama.
+6. Test cases & sample data.
+7. Panduan deploy ke production (env, scaling, backups).
+
+Sample seed data (sertakan minimal):
+- 1 toko, 3 produk, 2 pelanggan, 5 transaksi (paid/unpaid), 2 piutang.
+
+Acceptance test contoh (singkat):
+- Buat transaksi offline, sinkron ketika online -> transaksi muncul di backend, total benar.
+- Mark invoice unpaid -> catat piutang -> kirim reminder WA -> status reminder tercatat.
+- Kurangi stok saat transaksi -> stok tersisa sesuai qty.
+
+Catatan teknis penting untuk implementor:
+- Gunakan env var SESSION_SECRET (atau JWT_SECRET) dan dokumentasikan pembuatannya.
+- Jika WhatsApp Business API tidak tersedia, sediakan mode mock yang menulis ke logs & simulates success.
+- Untuk QRIS/payment: buat modul adapter agar mudah swap provider.
+
+Style & bahasa:
+- Semua UI text default: Bahasa Indonesia. Sediakan file i18n en/id (bahasa optional).
+
+---
+
+# Output yang diinginkan — format jawaban dari AI builder
+- Struktur folder lengkap + file kunci,
+- Kode backend (auth, transaksi, produk, sync offline),
+- Kode frontend mobile (screen POS, sync manager, offline DB),
+- Admin web minimal untuk laporan & pengaturan,
+- OpenAPI spec / Postman collection,
+- File seed JSON,
+- README setup & env list,
+- 5 screenshot mockup (atau design tokens / tailwind classes).
