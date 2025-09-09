@@ -1,13 +1,16 @@
 import { ReactNode, useState } from "react";
 import BottomNavigation from "./bottom-navigation";
-import { Store, Circle, Bell, User, LogOut } from "lucide-react";
+import { Store, Circle, Bell, User, LogOut, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useStore } from "@/hooks/useStore";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 
 interface MobileLayoutProps {
@@ -17,6 +20,7 @@ interface MobileLayoutProps {
 
 export default function MobileLayout({ children, currentPage }: MobileLayoutProps) {
   const { user, logout } = useAuth();
+  const { activeStore, stores, switchStore, isLoadingStores } = useStore();
 
   return (
     <>
@@ -26,12 +30,54 @@ export default function MobileLayout({ children, currentPage }: MobileLayoutProp
           <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
             <Store className="w-4 h-4" />
           </div>
-          <div>
-            <h1 className="text-lg font-semibold" data-testid="store-name">BukuWarung</h1>
-            <div className="flex items-center text-xs opacity-90">
-              <Circle className="w-1.5 h-1.5 text-success mr-1 fill-current" />
-              <span data-testid="sync-status">Tersinkronisasi</span>
-            </div>
+          <div className="flex-1">
+            {stores.length > 1 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-auto p-0 text-left hover:bg-white/10 text-primary-foreground">
+                    <div>
+                      <div className="flex items-center">
+                        <h1 className="text-lg font-semibold" data-testid="store-name">
+                          {isLoadingStores ? "Memuat..." : (activeStore?.name || "Pilih Toko")}
+                        </h1>
+                        <ChevronDown className="w-4 h-4 ml-1" />
+                      </div>
+                      <div className="flex items-center text-xs opacity-90">
+                        <Circle className="w-1.5 h-1.5 text-success mr-1 fill-current" />
+                        <span data-testid="sync-status">Tersinkronisasi</span>
+                      </div>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  <DropdownMenuLabel>Pilih Toko</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {stores.map((store: any) => (
+                    <DropdownMenuItem
+                      key={store.id}
+                      onClick={() => switchStore(store.id)}
+                      className={activeStore?.id === store.id ? "bg-accent" : ""}
+                    >
+                      <Store className="w-4 h-4 mr-2" />
+                      <div>
+                        <p className="font-medium">{store.name}</p>
+                        <p className="text-xs text-muted-foreground">{store.address}</p>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div>
+                <h1 className="text-lg font-semibold" data-testid="store-name">
+                  {isLoadingStores ? "Memuat..." : (activeStore?.name || "BukuWarung")}
+                </h1>
+                <div className="flex items-center text-xs opacity-90">
+                  <Circle className="w-1.5 h-1.5 text-success mr-1 fill-current" />
+                  <span data-testid="sync-status">Tersinkronisasi</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">

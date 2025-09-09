@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 
 export function useAuth() {
   const [user, setUser] = useState<any>(null);
@@ -18,14 +17,6 @@ export function useAuth() {
     setIsLoading(false);
   }, []);
 
-  // Verify user session with server
-  const { data: verifiedUser, isLoading: isVerifying } = useQuery({
-    queryKey: ["/api/auth/me"],
-    enabled: !!user,
-    retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
   const logout = () => {
     localStorage.removeItem("user");
     setUser(null);
@@ -35,9 +26,10 @@ export function useAuth() {
   const isAuthenticated = !!user;
 
   return {
-    user: verifiedUser || user,
-    isLoading: isLoading || (isAuthenticated && isVerifying),
+    user,
+    isLoading,
     isAuthenticated,
     logout,
+    setUser, // Expose setUser for manual updates
   };
 }

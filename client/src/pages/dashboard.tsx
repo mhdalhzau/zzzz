@@ -1,13 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import MobileLayout from "@/components/layout/mobile-layout";
 import { formatCurrency } from "@/lib/currency";
+import { useStore } from "@/hooks/useStore";
 import { Link } from "wouter";
 import type { DashboardStats } from "@shared/schema";
 import { TrendingUp, Receipt, Clock, AlertTriangle, Plus, Eye } from "lucide-react";
 
 export default function Dashboard() {
+  const { activeStoreId } = useStore();
+  
   const { data: stats, isLoading } = useQuery<DashboardStats>({
-    queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/dashboard"],
+    queryKey: [`/api/stores/${activeStoreId}/dashboard`],
+    enabled: !!activeStoreId,
   });
 
   if (isLoading) {

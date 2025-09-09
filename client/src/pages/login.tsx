@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { Lock, Mail, User } from "lucide-react";
 
@@ -15,16 +16,19 @@ export default function Login() {
     password: "",
   });
   const { toast } = useToast();
+  const { setUser } = useAuth();
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      return await apiRequest("POST", "/api/auth/login", credentials);
+      const response = await apiRequest("POST", "/api/auth/login", credentials);
+      return await response.json();
     },
     onSuccess: (data) => {
       localStorage.setItem("user", JSON.stringify(data.user));
+      setUser(data.user); // Update the auth state immediately
       toast({
         title: "Login berhasil",
-        description: `Selamat datang, ${data.user.name}!`,
+        description: `Selamat datang, ${data.user?.name || 'Pengguna'}!`,
       });
       setLocation("/");
     },
@@ -106,7 +110,7 @@ export default function Login() {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Demo credentials: admin@example.com / admin123
+              Demo credentials: admin@pos.com / admin123
             </p>
           </div>
         </CardContent>
