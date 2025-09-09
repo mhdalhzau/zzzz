@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useStore } from "@/hooks/useStore";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ export default function DebtListModal({
   const [editingDebt, setEditingDebt] = useState<any>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { activeStoreId } = useStore();
 
   const { data: debts = [], isLoading } = useQuery({
     queryKey: ["/api/customers", customer?.id, "debts"],
@@ -44,7 +46,7 @@ export default function DebtListModal({
         description: "Piutang berhasil dihapus",
       });
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/debts"] 
+        queryKey: [`/api/stores/${activeStoreId}/debts`] 
       });
       queryClient.invalidateQueries({ 
         queryKey: ["/api/customers", customer.id, "debts"] 

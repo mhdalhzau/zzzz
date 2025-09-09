@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useStore } from "@/hooks/useStore";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ export default function DebtPaymentModal({
 }: DebtPaymentModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { activeStoreId } = useStore();
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
@@ -73,10 +75,10 @@ export default function DebtPaymentModal({
         description: "Pembayaran piutang berhasil dicatat",
       });
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/debts"] 
+        queryKey: [`/api/stores/${activeStoreId}/debts`] 
       });
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/dashboard"] 
+        queryKey: [`/api/stores/${activeStoreId}/dashboard`] 
       });
       form.reset();
       onClose();

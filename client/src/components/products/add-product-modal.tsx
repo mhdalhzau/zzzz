@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useStore } from "@/hooks/useStore";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ interface AddProductModalProps {
 export default function AddProductModal({ isOpen, onClose }: AddProductModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { activeStoreId } = useStore();
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -57,14 +59,14 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
 
   const createProductMutation = useMutation({
     mutationFn: async (productData: any) => {
-      return await apiRequest("POST", "/api/stores/550e8400-e29b-41d4-a716-446655440001/products", productData);
+      return await apiRequest("POST", `/api/stores/${activeStoreId}/products`, productData);
     },
     onSuccess: () => {
       toast({
         title: "Sukses",
         description: "Produk berhasil ditambahkan",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/products"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/stores/${activeStoreId}/products`] });
       form.reset();
       onClose();
     },

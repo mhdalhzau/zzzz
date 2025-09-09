@@ -21,16 +21,20 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
       const response = await apiRequest("POST", "/api/auth/login", credentials);
-      return await response.json();
+      return response;
     },
     onSuccess: (data) => {
+      console.log("Login successful, user data:", data.user);
       localStorage.setItem("user", JSON.stringify(data.user));
       setUser(data.user); // Update the auth state immediately
       toast({
         title: "Login berhasil",
         description: `Selamat datang, ${data.user?.name || 'Pengguna'}!`,
       });
-      setLocation("/");
+      // Add small delay to ensure localStorage is written
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error: any) => {
       toast({

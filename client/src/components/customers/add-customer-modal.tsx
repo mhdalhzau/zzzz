@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useStore } from "@/hooks/useStore";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,7 @@ export default function AddCustomerModal({
 }: AddCustomerModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { activeStoreId } = useStore();
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
@@ -61,7 +63,7 @@ export default function AddCustomerModal({
     mutationFn: async (customerData: any) => {
       const url = isEdit 
         ? `/api/customers/${customer.id}`
-        : "/api/stores/550e8400-e29b-41d4-a716-446655440001/customers";
+        : `/api/stores/${activeStoreId}/customers`;
       const method = isEdit ? "PUT" : "POST";
       return await apiRequest(method, url, customerData);
     },
@@ -73,7 +75,7 @@ export default function AddCustomerModal({
           : "Pelanggan berhasil ditambahkan",
       });
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/customers"] 
+        queryKey: [`/api/stores/${activeStoreId}/customers`] 
       });
       form.reset();
       onClose();

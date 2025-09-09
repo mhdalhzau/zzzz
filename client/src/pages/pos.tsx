@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useStore } from "@/hooks/useStore";
 import MobileLayout from "@/components/layout/mobile-layout";
 import CartItem from "@/components/pos/cart-item";
 import PaymentModal from "@/components/pos/payment-modal";
@@ -29,18 +30,24 @@ export default function POS() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { activeStoreId } = useStore();
 
   const { data: products, isLoading } = useQuery({
-    queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/products"],
+    queryKey: [`/api/stores/${activeStoreId}/products`],
+    enabled: !!activeStoreId,
   });
 
   const { data: customers } = useQuery({
-    queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/customers"],
+    queryKey: [`/api/stores/${activeStoreId}/customers`],
+    enabled: !!activeStoreId,
   });
 
   const createTransactionMutation = useMutation({
     mutationFn: async (transactionData: any) => {
-      return await apiRequest("POST", "/api/stores/550e8400-e29b-41d4-a716-446655440001/transactions", transactionData);
+      if (!activeStoreId) {
+        throw new Error("Store tidak dipilih");
+      }
+      return await apiRequest("POST", `/api/stores/${activeStoreId}/transactions`, transactionData);
     },
     onSuccess: () => {
       toast({
@@ -51,8 +58,8 @@ export default function POS() {
       setDiscount(0);
       setTax(0);
       setSelectedCustomer("");
-      queryClient.invalidateQueries({ queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stores/550e8400-e29b-41d4-a716-446655440001/debts"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/stores/${activeStoreId}/dashboard`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/stores/${activeStoreId}/debts`] });
     },
     onError: (error) => {
       toast({
@@ -139,6 +146,15 @@ export default function POS() {
   };
 
   const handlePayment = (paymentMethod: string) => {
+    if (!activeStoreId) {
+      toast({
+        title: "Store tidak dipilih",
+        description: "Silakan login ulang untuk memilih store",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (cart.length === 0) {
       toast({
         title: "Keranjang kosong",
@@ -286,7 +302,7 @@ export default function POS() {
                   <SelectValue placeholder="Pilih pelanggan untuk transaksi hutang..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Pembeli umum</SelectItem>
+                  <SelectItem value="general">Pembeli umum</SelectItem>
                   {customers?.map((customer: any) => (
                     <SelectItem key={customer.id} value={customer.id}>
                       {customer.name} {customer.phone && `(${customer.phone})`}

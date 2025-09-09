@@ -17,12 +17,14 @@ export function useStore() {
 
   // Set active store dari localStorage atau default ke store pertama
   useEffect(() => {
-    const savedStoreId = localStorage.getItem("activeStoreId");
-    if (savedStoreId && user?.storeIds?.includes(savedStoreId)) {
-      setActiveStoreId(savedStoreId);
-    } else if (user?.storeIds && user.storeIds.length > 0) {
-      setActiveStoreId(user.storeIds[0]);
-      localStorage.setItem("activeStoreId", user.storeIds[0]);
+    if (user?.storeIds) {
+      const savedStoreId = localStorage.getItem("activeStoreId");
+      if (savedStoreId && user.storeIds.includes(savedStoreId)) {
+        setActiveStoreId(savedStoreId);
+      } else if (user.storeIds.length > 0) {
+        setActiveStoreId(user.storeIds[0]);
+        localStorage.setItem("activeStoreId", user.storeIds[0]);
+      }
     }
   }, [user]);
 

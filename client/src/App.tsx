@@ -56,7 +56,6 @@ function Router() {
 
 function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -65,28 +64,11 @@ function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Initialize app
-    setTimeout(() => setIsLoading(false), 1000);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  if (isLoading) {
-    return (
-      <div className="mobile-container">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold mb-2">BukuWarung</h2>
-            <p className="text-muted-foreground">Memuat aplikasi...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
