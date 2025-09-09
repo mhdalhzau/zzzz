@@ -65,7 +65,8 @@ export function setupAuthRoutes(app: Express) {
   // Create demo user endpoint (for development only)
   app.post("/api/auth/setup-demo", async (req, res) => {
     try {
-      const existingUser = await authStorage.getUserByEmail("admin@example.com");
+      const adminEmail = "admin@pos.com";
+      const existingUser = await authStorage.getUserByEmail(adminEmail);
       
       if (existingUser) {
         return res.json({ 
@@ -74,8 +75,8 @@ export function setupAuthRoutes(app: Express) {
       }
 
       const demoUser = await authStorage.createUser({
-        name: "Admin User",
-        email: "admin@example.com",
+        name: "Admin POS",
+        email: adminEmail,
         password: "admin123",
         role: "owner",
         storeIds: ["550e8400-e29b-41d4-a716-446655440001"]

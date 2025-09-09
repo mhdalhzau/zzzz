@@ -207,25 +207,22 @@ export class DatabaseStorage implements IStorage {
     storeId: string,
     filters?: { from?: Date; to?: Date; status?: string }
   ): Promise<Transaction[]> {
-    let query = db.select().from(transactions).where(eq(transactions.storeId, storeId));
-
+    let whereConditions = [eq(transactions.storeId, storeId)];
+    
     if (filters?.from && filters?.to) {
-      query = query.where(
-        and(
-          eq(transactions.storeId, storeId),
-          gte(transactions.createdAt, filters.from),
-          lte(transactions.createdAt, filters.to)
-        )
-      );
+      whereConditions.push(gte(transactions.createdAt, filters.from));
+      whereConditions.push(lte(transactions.createdAt, filters.to));
     }
 
     if (filters?.status) {
-      query = query.where(
-        and(eq(transactions.storeId, storeId), eq(transactions.paymentStatus, filters.status))
-      );
+      whereConditions.push(eq(transactions.paymentStatus, filters.status));
     }
 
-    return await query.orderBy(desc(transactions.createdAt));
+    return await db
+      .select()
+      .from(transactions)
+      .where(and(...whereConditions))
+      .orderBy(desc(transactions.createdAt));
   }
 
   async getTransaction(id: string): Promise<Transaction | undefined> {
@@ -236,7 +233,16 @@ export class DatabaseStorage implements IStorage {
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
     return await db.transaction(async (tx) => {
       // Create transaction
-      const [created] = await tx.insert(transactions).values(transaction).returning();
+      const [created] = await tx.insert(transactions).values({
+        ...transaction,
+        items: transaction.items as Array<{
+          productId: string;
+          productName: string;
+          quantity: number;
+          price: number;
+          discount: number;
+        }>
+      }).returning();
 
       // Update product stock
       for (const item of transaction.items) {
@@ -279,9 +285,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTransaction(id: string, transaction: Partial<InsertTransaction>): Promise<Transaction> {
+    const updateData: any = { ...transaction, updatedAt: new Date() };
+    if (transaction.items) {
+      updateData.items = transaction.items;
+    }
+    
     const [updated] = await db
       .update(transactions)
-      .set({ ...transaction, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(transactions.id, id))
       .returning();
     return updated;
@@ -336,31 +347,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCashFlowEntries(storeId: string, filters?: { from?: Date; to?: Date; type?: string }): Promise<CashFlowEntry[]> {
-    let query = db
-      .select()
-      .from(cashFlowEntries)
-      .where(eq(cashFlowEntries.storeId, storeId));
+    let whereConditions = [eq(cashFlowEntries.storeId, storeId)];
 
     if (filters?.from && filters?.to) {
-      query = query.where(
-        and(
-          eq(cashFlowEntries.storeId, storeId),
-          gte(cashFlowEntries.createdAt, filters.from),
-          lte(cashFlowEntries.createdAt, filters.to)
-        )
-      );
+      whereConditions.push(gte(cashFlowEntries.createdAt, filters.from));
+      whereConditions.push(lte(cashFlowEntries.createdAt, filters.to));
     }
 
     if (filters?.type) {
-      query = query.where(
-        and(
-          eq(cashFlowEntries.storeId, storeId),
-          eq(cashFlowEntries.type, filters.type)
-        )
-      );
+      whereConditions.push(eq(cashFlowEntries.type, filters.type));
     }
 
-    return await query.orderBy(desc(cashFlowEntries.createdAt));
+    return await db
+      .select()
+      .from(cashFlowEntries)
+      .where(and(...whereConditions))
+      .orderBy(desc(cashFlowEntries.createdAt));
   }
 
   async createCashFlowEntry(entry: InsertCashFlowEntry): Promise<CashFlowEntry> {
